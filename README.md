@@ -8,6 +8,7 @@ Bu uygulama, YouTube videolarından otomatik olarak zihin haritası oluşturman�
 - Gemini AI ile içerik analizi
 - İnteraktif zihin haritası görselleştirme
 - Haritayı HTML olarak kaydetme ve indirme
+- Zihin haritasını PNG formatında indirme
 - Türkçe ve İngilizce altyazı desteği
 
 ## Kurulum
@@ -31,7 +32,7 @@ streamlit run app.py
 
 2. Web tarayıcınızda açılan uygulamaya YouTube video URL'sini yapıştırın
 3. "Zihin Haritası Oluştur" butonuna tıklayın
-4. Oluşturulan zihin haritasını görüntüleyin ve indirin
+4. Oluşturulan zihin haritasını görüntüleyin ve HTML veya PNG formatında indirin
 
 ## Gereksinimler
 

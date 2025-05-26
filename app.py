@@ -6,6 +6,10 @@ import google.generativeai as genai
 import networkx as nx
 from pyvis.network import Network
 import re
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+import time # if a simple sleep is needed for waiting
 
 # Çevre değişkenlerini yükle
 load_dotenv()
@@ -203,6 +207,50 @@ def create_mind_map(data):
     
     return net
 
+def export_mind_map_as_png(html_file_path, png_file_path="mind_map.png"):
+    # Set up Chrome options for headless browsing
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox") # Often needed in restricted environments
+    chrome_options.add_argument("--disable-dev-shm-usage") # Also common in restricted environments
+    chrome_options.add_argument("--window-size=1200,800") # Set a reasonable window size
+
+    # Optional: Specify ChromeDriver path if not in PATH
+    # service = Service(executable_path='/path/to/chromedriver')
+    # driver = webdriver.Chrome(service=service, options=chrome_options)
+    # If ChromeDriver is in PATH, the service argument is not strictly needed
+    driver = webdriver.Chrome(options=chrome_options)
+
+    try:
+        # Load the local HTML file
+        # Ensure html_file_path is an absolute path or correctly relative
+        driver.get("file://" + os.path.abspath(html_file_path))
+
+        # Wait for the page and pyvis graph to load
+        # A simple time.sleep might be okay for a start, but a more robust
+        # solution would be to use WebDriverWait for a specific element.
+        # For pyvis, the graph is often rendered in a div with id 'mynetwork' or a canvas within it.
+        # Let's try a short sleep first, can be refined if needed.
+        time.sleep(5) # Adjust as necessary
+
+        # Take a screenshot of the entire page or a specific element
+        # For simplicity, let's start with the whole body.
+        # If pyvis renders in a predictable container (e.g., <div id="mynetwork">...</div>),
+        # you could target that element:
+        # element = driver.find_element(By.ID, "mynetwork")
+        # element.screenshot(png_file_path)
+        # For now, let's screenshot the body
+        driver.save_screenshot(png_file_path)
+        
+        return png_file_path
+    except Exception as e:
+        st.error(f"Error exporting to PNG: {str(e)}") # Make sure st is available or log differently
+        print(f"Error exporting to PNG: {str(e)}") # Also print to console for worker logs
+        return None
+    finally:
+        if 'driver' in locals():
+            driver.quit()
+
 def main():
     st.title("YouTube Video Zihin Haritası Oluşturucu")
     st.write("YouTube videosundan otomatik olarak zihin haritası oluşturun.")
@@ -231,12 +279,30 @@ def main():
                                 html = f.read()
                             st.components.v1.html(html, height=800)
                             
+                            # HTML indirme butonu
                             st.download_button(
-                                label="Zihin Haritasını İndir",
+                                label="Zihin Haritasını (HTML) İndir",
                                 data=html,
                                 file_name="mind_map.html",
                                 mime="text/html"
                             )
+
+                            # PNG olarak dışa aktar ve indirme butonu ekle
+                            png_file_path = "mind_map.png"
+                            with st.spinner("PNG olarak dışa aktarılıyor..."):
+                                exported_png_path = export_mind_map_as_png("mind_map.html", png_file_path)
+                            
+                            if exported_png_path:
+                                with open(exported_png_path, "rb") as f:
+                                    png_data = f.read()
+                                st.download_button(
+                                    label="Zihin Haritasını (PNG) İndir",
+                                    data=png_data,
+                                    file_name="mind_map.png",
+                                    mime="image/png"
+                                )
+                            else:
+                                st.warning("PNG dışa aktarma başarısız oldu.")
         else:
             st.error("Geçersiz YouTube URL'si")
 
